@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusSlot — Smart Classroom Availability</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f6fb;color:#182230}
+  h1,h2,.brand,.login-logo{font-family:Sora,Inter,Arial,sans-serif}
+  button,input,select{font:inherit}
+  button{transition:background .15s ease,border-color .15s ease,transform .1s ease,box-shadow .15s ease}
+  .app{display:none;min-height:100vh;animation:fadeIn .35s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  .sidebar{width:245px;background:#111827;color:#fff;padding:24px 16px;position:fixed;top:0;bottom:0;display:flex;flex-direction:column}
+  .brand{font-size:22px;font-weight:800;padding:8px 12px 28px;letter-spacing:-.02em}
+  .brand span{color:#60a5fa}
+  .nav{flex:1}
+  .nav button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:#cbd5e1;text-align:left;padding:13px 14px;border-radius:10px;margin:5px 0;cursor:pointer}
+  .nav button.active,.nav button:hover{background:#1e293b;color:#fff}
+  .nav button.active{box-shadow:inset 3px 0 0 #60a5fa}
+  .sidebar-foot{padding:12px;font-size:12px;color:#64748b;border-top:1px solid #1f2937;margin-top:12px}
+  .main{margin-left:245px;width:calc(100% - 245px);padding:28px 34px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  h1{margin:0;font-size:28px;letter-spacing:-.01em}.sub{color:#64748b;margin-top:6px}
+  .profile-wrap{position:relative}
+  .profile{background:#fff;border:1px solid #e2e8f0;padding:9px 14px;border-radius:12px;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .profile:hover{border-color:#c7d2fe;background:#fafbff}
+  .profile .chevron{color:#94a3b8;font-size:11px;transition:transform .15s ease}
+  .profile.open .chevron{transform:rotate(180deg)}
+  .profile-menu{position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid #e2e8f0;border-radius:13px;box-shadow:0 12px 30px #0000001a;min-width:190px;display:none;overflow:hidden;z-index:15}
+  .profile-menu.show{display:block}
+  .profile-menu .who{padding:12px 14px;font-size:12px;color:#64748b;border-bottom:1px solid #edf0f4}
+  .profile-menu button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;text-align:left;padding:12px 14px;cursor:pointer;font-weight:700;color:#b91c1c}
+  .profile-menu button:hover{background:#fef2f2}
+  .page{display:none}.page.active{display:block;animation:fadeIn .25s ease}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+  .card{background:#fff;border:1px solid #e5e7eb;border-left:3px solid var(--accent,#cbd5e1);border-radius:14px;padding:19px;box-shadow:0 2px 8px #00000008}
+  .label{color:#64748b;font-size:13px}.value{font-size:27px;font-weight:800;margin-top:7px}
+  .green{color:#15803d}.orange{color:#c2410c}.blue{color:#2563eb}
+  .panel{background:#fff;border:1px solid #e5e7eb;border-radius:15px;padding:20px;margin-bottom:20px}
+  .panel h2{font-size:18px;margin:0 0 16px}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:13px 10px;border-bottom:1px solid #edf0f4;font-size:14px}
+  th{color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  tbody tr:hover{background:#fafbff}
+  .status{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700}
+  .available{background:#dcfce7;color:#166534}.occupied{background:#fee2e2;color:#991b1b}
+  .requested{background:#fef3c7;color:#92400e}.booked{background:#dbeafe;color:#1d4ed8}
+  .btn{border:0;border-radius:9px;padding:9px 13px;cursor:pointer;font-weight:700}
+  .btn:hover{transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .primary{background:#2563eb;color:#fff}.primary:hover{background:#1d4ed8}
+  .secondary{background:#eef2ff;color:#3730a3}.secondary:hover{background:#e0e7ff}
+  .danger{background:#fee2e2;color:#991b1b}.danger:hover{background:#fecaca}
+  .muted{background:#f1f5f9;color:#475569}.muted:hover{background:#e2e8f0}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .filters{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  label{display:block;font-size:12px;color:#64748b;margin-bottom:6px}
+  input,select{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:9px;background:#fff}
+  input:focus,select:focus,button:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+  .notice{padding:14px;border-radius:11px;background:#eff6ff;color:#1e40af;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .step{padding:10px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;font-weight:700}
+  .arrow{color:#94a3b8}
+  .empty{text-align:center;color:#64748b;padding:25px}
+  @media(max-width:900px){.sidebar{width:190px}.main{margin-left:190px;width:calc(100% - 190px);padding:20px}.cards{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}}
+
+  .notification{display:flex;gap:12px;padding:15px;border:1px solid #e2e8f0;border-radius:12px;margin:10px 0;background:#fff;cursor:pointer}
+  .notification.unread{border-left:4px solid #2563eb;background:#f8fbff}
+  .notification:hover{border-color:#c7d2fe}
+  .notification-icon{font-size:21px}
+  .notification-title{font-weight:800}.notification-meta{font-size:12px;color:#64748b;margin-top:4px}.notification-detail{font-size:13px;color:#475569;margin-top:7px}
+  .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;margin-left:6px}
+  .pill-cancel{background:#fee2e2;color:#991b1b}.pill-reschedule{background:#dbeafe;color:#1d4ed8}.pill-info{background:#dcfce7;color:#166534}
+  .modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:20}
+  .modal.show{display:flex}.modal-box{background:white;border-radius:16px;padding:22px;width:min(420px,92vw);box-shadow:0 20px 60px #0004}
+  .modal-box h3{margin-top:0}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#111827;color:#fff;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;z-index:30;box-shadow:0 10px 30px #00000030}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+
+  .login-screen{min-height:100vh;background:radial-gradient(circle at 15% 10%,#dbe7ff 0%,transparent 45%),linear-gradient(135deg,#eef4ff 0%,#f8fafc 60%);display:flex;align-items:center;justify-content:center;padding:24px}
+  .login-card{width:min(460px,100%);background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:34px;box-shadow:0 24px 70px #00000014;animation:fadeIn .3s ease}
+  .login-mark{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#2563eb,#60a5fa);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:800;box-shadow:0 8px 20px #2563eb33}
+  .login-logo{text-align:center;font-size:26px;font-weight:800;margin-bottom:6px}.login-logo span{color:#2563eb}
+  .login-sub{text-align:center;color:#64748b;font-size:14px;margin-bottom:26px}
+  .role-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:#f1f5f9;padding:5px;border-radius:12px;margin-bottom:22px}
+  .role-tab{border:0;background:transparent;padding:11px 7px;border-radius:8px;cursor:pointer;font-weight:700;color:#64748b}
+  .role-tab.active{background:#fff;color:#1d4ed8;box-shadow:0 1px 5px #00000010}
+  .login-field{margin-bottom:15px}.login-field label{font-size:13px;font-weight:700;color:#334155;margin-bottom:6px}
+  .login-field input{padding:12px}
+  .login-actions{display:flex;gap:10px;align-items:center;margin-top:18px}
+  .login-error{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;padding:10px;border-radius:9px;font-size:13px;display:none;margin-top:12px}
+  .login-demo{font-size:12px;color:#64748b;background:#f8fafc;border-radius:9px;padding:10px;margin-top:15px;line-height:1.5}
+  .login-signedout{text-align:center;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;padding:10px;border-radius:9px;font-size:13px;margin-bottom:18px;display:none}
+  .login-signedout.show{display:block}
+
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-mark">CS</div>
+    <div class="login-logo">Campus<span>Slot</span></div>
+    <div class="login-sub">Smart classroom availability & timetable updates</div>
+
+    <div class="login-signedout" id="signedOutNotice">You've been signed out.</div>
+
+    <div class="role-tabs">
+      <button class="role-tab active" data-role="student" onclick="selectLoginRole('student')">🎓 Student</button>
+      <button class="role-tab" data-role="teacher" onclick="selectLoginRole('teacher')">👨‍🏫 Teacher</button>
+      <button class="role-tab" data-role="admin" onclick="selectLoginRole('admin')">⚙️ Admin</button>
+    </div>
+
+    <form onsubmit="login(event)">
+      <div class="login-field">
+        <label for="loginBTID">BTID</label>
+        <input id="loginBTID" type="text" placeholder="Enter your college BTID" autocomplete="username" required>
+      </div>
+      <div class="login-field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+      </div>
+      <div class="login-actions">
+        <button class="btn primary" type="submit" style="flex:1">Login</button>
+      </div>
+      <div class="login-error" id="loginError"></div>
+    </form>
+
+    <div class="login-demo">
+      <b>Prototype note:</b> This login page is only a frontend demonstration. It does not send or store real BTIDs/passwords and is not connected to your college authentication system.
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">Campus<span>Slot</span></div>
+    <div class="nav" id="nav"></div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <div><h1 id="title">Teacher Dashboard</h1><div class="sub">Real-time classroom availability from timetable changes</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn secondary" onclick="showPage(currentRole==='student'?'notifications':'dashboard', null)" title="Notifications">
+          🔔 <span id="notifBadge" style="margin-left:4px">0</span>
+        </button>
+        <div class="profile-wrap">
+          <button class="profile" id="profile" onclick="toggleProfileMenu()">
+            <span id="profileLabel">👨‍🏫 Prof. Arjun Sharma · CSE</span><span class="chevron">▾</span>
+          </button>
+          <div class="profile-menu" id="profileMenu">
+            <div class="who" id="profileMenuWho">Signed in as Teacher</div>
+            <button onclick="logout()">🚪 Log out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="dashboard" class="page active">
+      <div class="cards">
+        <div class="card" style="--accent:#94a3b8"><div class="label">Today's classes</div><div class="value">5</div></div>
+        <div class="card" style="--accent:#15803d"><div class="label">Available rooms</div><div class="value green" id="availableCount">3</div></div>
+        <div class="card" style="--accent:#2563eb"><div class="label">My requests</div><div class="value blue" id="requestCount">0</div></div>
+        <div class="card" style="--accent:#c2410c"><div class="label">Cancelled today</div><div class="value orange" id="cancelCount">0</div></div>
+      </div>
+
+      <div class="panel">
+        <h2>How the mechanism works</h2>
+        <div class="flow">
+          <div class="step">College Timetable</div><div class="arrow">→</div>
+          <div class="step">Teacher cancels class</div><div class="arrow">→</div>
+          <div class="step">Room + slot becomes available</div><div class="arrow">→</div>
+          <div class="step">Another teacher searches</div><div class="arrow">→</div>
+          <div class="step">Request → Approval → Booking</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Today's timetable</h2>
+        <table>
+          <thead><tr><th>Time</th><th>Subject</th><th>Class</th><th>Room</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="todayTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="myclasses" class="page">
+      <div class="notice">Your scheduled classes are automatically loaded from the college timetable. You only need to report a cancellation.</div>
+      <div class="panel">
+        <h2>My classes — Monday</h2>
+        <table>
+          <thead><tr><th>Time</th><th>Subject</th><th>Class</th><th>Room</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="classTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="findroom" class="page">
+      <div class="panel">
+        <h2>Find an available room</h2>
+        <div class="filters">
+          <div><label>Date</label><input id="date" type="date" value="2026-09-14"></div>
+          <div><label>Time slot</label><select id="time"><option>09:00–10:00</option><option selected>11:00–12:00</option><option>12:00–13:00</option><option>14:00–15:00</option></select></div>
+          <div><label>Minimum capacity</label><input id="capacity" type="number" value="40" min="1"></div>
+          <div><label>Room type</label><select id="roomType"><option>Any</option><option>Classroom</option><option>Lab</option></select></div>
+        </div>
+        <br><button class="btn primary" onclick="searchRooms()">Search available rooms</button>
+      </div>
+      <div class="panel">
+        <h2>Search results</h2>
+        <div id="roomResults" class="empty">Enter your requirements and search. The system will only show rooms whose timetable slot is free.</div>
+      </div>
+    </section>
+
+    <section id="bookings" class="page">
+      <div class="panel">
+        <h2>My room requests</h2>
+        <table><thead><tr><th>Room</th><th>Date</th><th>Time</th><th>Purpose</th><th>Status</th></tr></thead>
+        <tbody id="bookingTable"></tbody></table>
+      </div>
+    </section>
+
+
+    <section id="studentdashboard" class="page">
+      <div class="cards">
+        <div class="card" style="--accent:#94a3b8"><div class="label">Today's classes</div><div class="value">5</div></div>
+        <div class="card" style="--accent:#c2410c"><div class="label">Cancelled today</div><div class="value orange" id="studentCancelled">0</div></div>
+        <div class="card" style="--accent:#2563eb"><div class="label">Rescheduled today</div><div class="value blue" id="studentRescheduled">0</div></div>
+        <div class="card" style="--accent:#15803d"><div class="label">Unread notifications</div><div class="value green" id="studentUnread">0</div></div>
+      </div>
+
+      <div class="panel">
+        <h2>My Class Schedule</h2>
+        <div class="notice">Students don't need to manually check with teachers. When a class is cancelled or rescheduled, the change appears here automatically.</div>
+        <table>
+          <thead><tr><th>Time</th><th>Subject</th><th>Teacher</th><th>Room</th><th>Class status</th></tr></thead>
+          <tbody id="studentSchedule"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h2>Latest Changes</h2>
+        <div id="studentLatest"></div>
+      </div>
+    </section>
+
+    <section id="notifications" class="page">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2 style="margin:0">Student Notifications</h2>
+          <button class="btn muted" onclick="markAllRead()">Mark all as read</button>
+        </div>
+        <div id="notificationList" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+    <section id="admin" class="page">
+      <div class="notice">Demo admin view. In a real deployment, only authorized timetable administrators would access this panel.</div>
+      <div class="panel">
+        <h2>Pending requests</h2>
+        <table><thead><tr><th>Teacher</th><th>Room</th><th>Date</th><th>Time</th><th>Purpose</th><th>Action</th></tr></thead>
+        <tbody id="adminTable"></tbody></table>
+      </div>
+    </section>
+  </main>
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentRole="teacher";
+
+let loginRole="student";
+const demoAccounts={
+  student:{btid:"BTID-STUDENT",password:"student123"},
+  teacher:{btid:"BTID-TEACHER",password:"teacher123"},
+  admin:{btid:"BTID-ADMIN",password:"admin123"}
+};
+
+function selectLoginRole(role){
+  loginRole=role;
+  document.querySelectorAll(".role-tab").forEach(b=>b.classList.toggle("active",b.dataset.role===role));
+  document.getElementById("loginError").style.display="none";
+}
+
+function login(event){
+  event.preventDefault();
+  const btid=document.getElementById("loginBTID").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const account=demoAccounts[loginRole];
+  const error=document.getElementById("loginError");
+  if(btid===account.btid && password===account.password){
+    document.getElementById("loginScreen").style.display="none";
+    document.querySelector(".app").style.display="flex";
+    document.getElementById("signedOutNotice").classList.remove("show");
+    document.getElementById("loginBTID").value="";
+    document.getElementById("loginPassword").value="";
+    setRole(loginRole);
+  }else{
+    error.textContent=`Demo login failed. Use the prototype ${loginRole} credentials shown in the next message.`;
+    error.style.display="block";
+  }
+}
+
+let requests=[];
+let cancelled=0;
+let notifications=[
+  {id:1,type:"info",title:"Welcome to CampusSlot",detail:"You will receive real-time updates when your class is cancelled or rescheduled.",meta:"Just now",read:false},
+];
+
+const classes = [
+ {id:1,time:"09:00–10:00",subject:"Data Structures",section:"CSE-A",teacher:"Prof. Arjun Sharma",room:"Room 101",status:"occupied"},
+ {id:2,time:"10:00–11:00",subject:"Digital Logic",section:"CSE-A",teacher:"Prof. Neha Gupta",room:"Room 201",status:"occupied"},
+ {id:3,time:"11:00–12:00",subject:"Mathematics",section:"CSE-A",teacher:"Prof. Rohan Mehta",room:"Room 201",status:"occupied"},
+ {id:4,time:"12:00–13:00",subject:"Programming",section:"CSE-B",teacher:"Prof. Arjun Sharma",room:"Lab 2",status:"occupied"},
+ {id:5,time:"14:00–15:00",subject:"Computer Networks",section:"CSE-A",teacher:"Prof. Arjun Sharma",room:"Room 305",status:"occupied"}
+];
+
+const rooms = [
+ {name:"Room 101",capacity:60,type:"Classroom"},
+ {name:"Room 201",capacity:60,type:"Classroom"},
+ {name:"Room 305",capacity:70,type:"Classroom"},
+ {name:"Lab 2",capacity:50,type:"Lab"},
+ {name:"Seminar Hall",capacity:150,type:"Classroom"}
+];
+
+function statusLabel(s){
+ if(s==="available") return '<span class="status available">Available</span>';
+ if(s==="cancelled") return '<span class="status" style="background:#fee2e2;color:#991b1b">Cancelled</span>';
+ if(s==="rescheduled") return '<span class="status requested">Rescheduled</span>';
+ if(s==="occupied") return '<span class="status occupied">Scheduled</span>';
+ if(s==="requested") return '<span class="status requested">Requested</span>';
+ return '<span class="status booked">Booked</span>';
+}
+
+function roleNav(){
+ const nav=document.getElementById("nav");
+ const teacher=[
+   ["dashboard","🏠 Dashboard"],["myclasses","📚 My Classes"],["findroom","🔎 Find Available Room"],["bookings","📋 My Requests"],["admin","⚙️ Admin Panel"]
+ ];
+ const student=[
+   ["studentdashboard","🏠 Student Dashboard"],["notifications","🔔 Notifications"]
+ ];
+ const admin=[["admin","⚙️ Admin Panel"],["dashboard","📊 College Overview"],["findroom","🔎 Room Availability"]];
+ const data=currentRole==="teacher"?teacher:(currentRole==="student"?student:admin);
+ nav.innerHTML=data.map((x,i)=>`<button class="${i===0?"active":""}" onclick="showPage('${x[0]}',this)">${x[1]}</button>`).join("");
+}
+
+function showPage(id,btn){
+ document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+ const page=document.getElementById(id);
+ if(!page)return;
+ page.classList.add("active");
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+ if(btn) btn.classList.add("active");
+ const titles={
+  dashboard:"Teacher Dashboard",myclasses:"My Classes",findroom:"Find Available Room",bookings:"My Requests",
+  admin:"Admin Panel",studentdashboard:"Student Dashboard",notifications:"Student Notifications"
+ };
+ document.getElementById("title").textContent=titles[id]||"CampusSlot";
+ if(id==="studentdashboard") renderStudent();
+ if(id==="notifications") renderNotifications();
+ if(id==="findroom") searchRooms();
+}
+
+function setRole(role){
+ currentRole=role;
+ const profileLabel=document.getElementById("profileLabel");
+ const who=document.getElementById("profileMenuWho");
+ profileLabel.textContent=role==="teacher"?"👨‍🏫 Prof. Arjun Sharma · CSE":role==="student"?"🎓 Aarav Singh · CSE-A":"⚙️ Admin · Computer Science";
+ who.textContent=role==="teacher"?"Signed in as Teacher":role==="student"?"Signed in as Student":"Signed in as Admin";
+ roleNav();
+ if(role==="student") showPage("studentdashboard",document.querySelector("#nav button"));
+ else if(role==="admin") showPage("admin",document.querySelector("#nav button"));
+ else showPage("dashboard",document.querySelector("#nav button"));
+ updateNotificationUI();
+}
+
+function toggleProfileMenu(){
+ document.getElementById("profileMenu").classList.toggle("show");
+ document.getElementById("profile").classList.toggle("open");
+}
+function closeProfileMenu(){
+ document.getElementById("profileMenu").classList.remove("show");
+ document.getElementById("profile").classList.remove("open");
+}
+document.addEventListener("click",e=>{
+ const wrap=e.target.closest(".profile-wrap");
+ if(!wrap) closeProfileMenu();
+});
+
+function showToast(msg){
+ const t=document.getElementById("toast");
+ t.textContent=msg;
+ t.classList.add("show");
+ clearTimeout(showToast._t);
+ showToast._t=setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+function logout(){
+ closeProfileMenu();
+ document.querySelector(".app").style.display="none";
+ document.getElementById("loginScreen").style.display="flex";
+ document.getElementById("signedOutNotice").classList.add("show");
+ document.getElementById("loginError").style.display="none";
+ selectLoginRole(loginRole);
+ document.getElementById("loginBTID").focus();
+}
+
+function renderTeacherClasses(){
+ const owned=classes.filter(c=>c.teacher==="Prof. Arjun Sharma");
+ const html=owned.map(c=>`
+ <tr><td>${c.time}</td><td>${c.subject}</td><td>${c.section}</td><td>${c.room}</td><td>${statusLabel(c.status)}</td>
+ <td>${c.status==="occupied"?`<button class="btn danger" onclick="cancelClass(${c.id})">Cancel class</button>`:`<span style="color:#64748b">${c.status==="cancelled"?"Reported":"Updated"}</span>`}</td></tr>`).join("");
+ const today=document.getElementById("todayTable");
+ const mine=document.getElementById("classTable");
+ if(today) today.innerHTML=html;
+ if(mine) mine.innerHTML=html;
+ document.getElementById("cancelCount").textContent=cancelled;
+}
+
+function cancelClass(id){
+ const c=classes.find(x=>x.id===id);
+ if(!c || c.status!=="occupied") return;
+ c.status="cancelled"; cancelled++;
+ addNotification(
+   "cancel",
+   `Cancelled: ${c.subject}`,
+   `${c.subject} for ${c.section} at ${c.time} in ${c.room} has been cancelled.`
+ );
+ showToast(`Class cancelled — ${c.room} at ${c.time} is now available. ${c.section} students have been notified.`);
+ renderTeacherClasses();
+ updateCounts();
+ renderStudent();
+}
+
+function rescheduleClass(id){
+ const c=classes.find(x=>x.id===id);
+ if(!c)return;
+ const newTime=prompt(`Enter new time slot for ${c.subject}`, "15:00–16:00");
+ if(!newTime || newTime===c.time)return;
+ const oldTime=c.time;
+ c.time=newTime;c.status="rescheduled";
+ addNotification(
+   "reschedule",
+   `Rescheduled: ${c.subject}`,
+   `${c.subject} for ${c.section} moved from ${oldTime} to ${newTime}. Room: ${c.room}.`
+ );
+ renderTeacherClasses();renderStudent();
+}
+
+function updateCounts(){
+ const count=classes.filter(c=>c.status==="cancelled").length+classes.filter(c=>c.status==="available").length+2;
+ document.getElementById("availableCount").textContent=count;
+ document.getElementById("requestCount").textContent=requests.length;
+}
+
+function searchRooms(){
+ const cap=Number(document.getElementById("capacity").value)||0;
+ const type=document.getElementById("roomType").value;
+ const time=document.getElementById("time").value;
+ const unavailable=classes.filter(c=>c.time===time && c.status==="occupied").map(c=>c.room);
+ const result=rooms.filter(r=>r.capacity>=cap && (type==="Any"||r.type===type) && !unavailable.includes(r.name));
+ const box=document.getElementById("roomResults");
+ if(!result.length){box.innerHTML='<div class="empty">No room matches these requirements for this slot.</div>';return;}
+ box.innerHTML=result.map(r=>`
+ <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+   <div><b>${r.name}</b><div style="color:#64748b;font-size:13px;margin-top:5px">Capacity ${r.capacity} · ${r.type} · ${r.name==="Room 201"?"Projector available":"Standard facilities"}</div></div>
+   <button class="btn primary" onclick="requestRoom('${r.name}','${time}')">Request room</button>
+ </div>`).join("");
+}
+
+function requestRoom(room,time){
+ const req={teacher:"Prof. Arjun Sharma",room,date:document.getElementById("date").value,time,purpose:"Extra class",status:"requested"};
+ requests.push(req);
+ renderRequests();renderAdmin();updateCounts();
+ showToast(`Request submitted for ${room}, ${time} — pending admin approval.`);
+}
+
+function renderRequests(){
+ const t=document.getElementById("bookingTable");
+ if(!t)return;
+ t.innerHTML=requests.length?requests.map(r=>`
+ <tr><td>${r.room}</td><td>${r.date}</td><td>${r.time}</td><td>${r.purpose}</td><td>${statusLabel(r.status)}</td></tr>`).join("")
+ :'<tr><td colspan="5" class="empty">No requests yet.</td></tr>';
+}
+
+function renderAdmin(){
+ const t=document.getElementById("adminTable");
+ if(!t)return;
+ t.innerHTML=requests.length?requests.map((r,i)=>`
+ <tr><td>${r.teacher}</td><td>${r.room}</td><td>${r.date}</td><td>${r.time}</td><td>${r.purpose}</td>
+ <td>${r.status==="requested"?`<button class="btn primary" onclick="approve(${i})">Approve</button>`:statusLabel(r.status)}</td></tr>`).join("")
+ :'<tr><td colspan="6" class="empty">No pending requests.</td></tr>';
+}
+
+function approve(i){
+ const r=requests[i]; r.status="booked";
+ addNotification("info","Room booking approved",`${r.room} is booked for ${r.time} for an extra class.`);
+ renderRequests();renderAdmin();updateCounts();
+ showToast(`${r.room} booked successfully for ${r.time}.`);
+}
+
+function addNotification(type,title,detail){
+ notifications.unshift({id:Date.now(),type,title,detail,meta:"Just now",read:false});
+ updateNotificationUI();
+ if(currentRole==="student"){renderNotifications();renderStudent();}
+}
+
+function renderNotifications(){
+ const box=document.getElementById("notificationList");
+ if(!box)return;
+ if(!notifications.length){box.innerHTML='<div class="empty">No notifications.</div>';return;}
+ box.innerHTML=notifications.map(n=>{
+   const icon=n.type==="cancel"?"❌":n.type==="reschedule"?"🔄":"ℹ️";
+   const pill=n.type==="cancel"?'<span class="pill pill-cancel">CANCELLED</span>':n.type==="reschedule"?'<span class="pill pill-reschedule">RESCHEDULED</span>':'<span class="pill pill-info">INFO</span>';
+   return `<div class="notification ${n.read?"":"unread"}" onclick="readNotification(${n.id})">
+     <div class="notification-icon">${icon}</div>
+     <div style="flex:1"><div class="notification-title">${n.title} ${pill}</div>
+     <div class="notification-meta">${n.meta}${n.read?"":" · Unread"}</div>
+     <div class="notification-detail">${n.detail}</div></div>
+   </div>`;
+ }).join("");
+}
+
+function readNotification(id){
+ const n=notifications.find(x=>x.id===id);if(n)n.read=true;
+ renderNotifications();updateNotificationUI();
+}
+
+function markAllRead(){notifications.forEach(n=>n.read=true);renderNotifications();updateNotificationUI();}
+
+function updateNotificationUI(){
+ const unread=notifications.filter(n=>!n.read).length;
+ const badge=document.getElementById("notifBadge");
+ if(badge) badge.textContent=unread;
+ const u=document.getElementById("studentUnread");if(u)u.textContent=unread;
+}
+
+function renderStudent(){
+ const table=document.getElementById("studentSchedule");
+ if(!table)return;
+ table.innerHTML=classes.map(c=>{
+   const isChange=c.status==="cancelled"||c.status==="rescheduled";
+   return `<tr>
+     <td>${c.time}</td><td>${c.subject}</td><td>${c.teacher}</td><td>${c.room}</td>
+     <td>${statusLabel(c.status)} ${c.status==="cancelled"?'<span style="font-size:12px;color:#991b1b">Class will not be held</span>':c.status==="rescheduled"?'<span style="font-size:12px;color:#92400e">Please check new time</span>':""}</td>
+   </tr>`
+ }).join("");
+
+ const latest=document.getElementById("studentLatest");
+ const important=notifications.filter(n=>n.type==="cancel"||n.type==="reschedule").slice(0,5);
+ latest.innerHTML=important.length?important.map(n=>`
+   <div class="notification ${n.read?"":"unread"}"><div class="notification-icon">${n.type==="cancel"?"❌":"🔄"}</div>
+   <div><div class="notification-title">${n.title}</div><div class="notification-meta">${n.meta}</div><div class="notification-detail">${n.detail}</div></div></div>
+ `).join(""):'<div class="empty">No class changes reported.</div>';
+
+ document.getElementById("studentCancelled").textContent=classes.filter(c=>c.status==="cancelled").length;
+ document.getElementById("studentRescheduled").textContent=classes.filter(c=>c.status==="rescheduled").length;
+ updateNotificationUI();
+}
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="Escape") closeProfileMenu();
+});
+
+
+function populateRescheduleSelect(){
+ const s=document.getElementById("rescheduleClass"); if(!s)return;
+ s.innerHTML=classes.filter(c=>c.status==="occupied").map(c=>`<option value="${c.id}">${c.subject} · ${c.section} · ${c.time}</option>`).join("");
+}
+function adminReschedule(){
+ const id=Number(document.getElementById("rescheduleClass").value);
+ rescheduleClass(id);
+ populateRescheduleSelect();
+}
+
+// Initial UI
+roleNav();
+renderTeacherClasses();
+renderRequests();
+renderAdmin();
+renderStudent();
+updateCounts();
+updateNotificationUI();
+populateRescheduleSelect();
+</script>
+</body>
+</html>
