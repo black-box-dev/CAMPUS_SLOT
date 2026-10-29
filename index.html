@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CampusSlot — Classroom Scheduling</title>
+<style>
+:root{--o:#f97316;--o2:#fff0e5;--ink:#171717;--mut:#68635f;--line:#e8e0d9;--bg:#fffaf6}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select{font:inherit}
+button{cursor:pointer;border:0;border-radius:9px;padding:9px 13px;font-weight:650}
+button:disabled{opacity:.45;cursor:not-allowed}
+.primary{background:var(--o);color:#fff}
+.outline{background:#fff;border:1px solid var(--line);color:#292522}
+.dark{background:#25211e;color:#fff}
+.small{padding:6px 9px;font-size:12px}
+.hidden{display:none}
+input,select{border:1px solid #d8cfc6;border-radius:9px;padding:10px;background:#fff;min-width:0}
+input:focus,select:focus{outline:2px solid #f9731640;border-color:var(--o)}
+.topbar{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:5}
+.brand{display:flex;gap:10px;align-items:center;font-weight:800;font-size:18px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--o);color:#fff;display:grid;place-items:center}
+.user{display:flex;gap:12px;align-items:center}
+.user small{display:block;color:var(--mut);font-size:11px}
+.layout{display:grid;grid-template-columns:200px minmax(0,1fr);max-width:1400px;margin:auto;min-height:calc(100vh - 64px)}
+aside{padding:20px 12px;border-right:1px solid var(--line)}
+.nav{display:block;width:100%;text-align:left;background:none;color:#5b5550;margin:3px 0}
+.nav.active{background:var(--o2);color:#c45108;box-shadow:inset 3px 0 var(--o)}
+main{padding:24px;min-width:0}
+h1{margin:0 0 4px;font-size:26px}
+h2{margin:0 0 6px}
+.sub{color:var(--mut);margin:0 0 20px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.stat,.card,.note{background:#fff;border:1px solid var(--line);border-radius:14px}
+.stat{padding:16px}
+.stat b{display:block;font-size:28px}
+.stat span{color:var(--mut);font-size:12px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:14px}
+.day{font-size:12px;font-weight:800;color:#6d5a4a;text-transform:uppercase;margin:16px 0 8px}
+.card{display:grid;grid-template-columns:80px 1fr auto;gap:14px;align-items:center;padding:13px;margin-bottom:9px}
+.time{background:var(--o2);color:#b84a00;border-radius:10px;text-align:center;padding:10px 4px;font-weight:800;font-size:12px}
+.time span{display:block;font-size:10px;color:#77706a}
+.meta{color:var(--mut);font-size:12px;margin-top:4px}
+.pill{border-radius:99px;padding:3px 8px;font-size:10px;font-weight:800;background:var(--o2);color:#a84606}
+.pill.Cancelled{background:#f0ece8;color:#302b27}
+.acts{display:flex;gap:6px}
+.empty{padding:28px;text-align:center;color:var(--mut)}
+.legend{color:var(--mut);font-size:12px;margin-bottom:12px}
+.wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:760px;background:#fff}
+th,td{padding:8px;text-align:center;border:1px solid #e9e0d8;font-size:12px}
+th{background:#fff5ed;color:#6d4b35}
+.cell{width:100%;min-width:96px;font-size:11px;font-weight:800;padding:8px 4px}
+.cell.free{background:#fff6ee;color:#b85b17;border:1px solid #ead8c9}
+.cell.busy{background:#25211e;color:#fff}
+.note{display:flex;gap:12px;padding:14px;margin-bottom:10px;align-items:flex-start}
+.note.unread{border-color:#ffc18e;background:#fff9f4}
+.note p{margin:3px 0;color:var(--mut);font-size:12px}
+.note small{color:#98a2b3}
+.log{border-left:2px solid #e6d9cf;padding-left:18px;margin-left:6px}
+.log div{margin-bottom:16px}
+.log p{margin:3px 0;color:var(--mut);font-size:12px}
+.back{position:fixed;inset:0;background:#10182888;z-index:20;display:grid;place-items:center;padding:16px}
+.modal{background:#fff;width:min(640px,100%);max-height:92vh;overflow:auto;border-radius:18px;padding:22px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f9f5f1;border:1px solid var(--line);border-radius:11px;padding:12px;margin:12px 0}
+.grid3 span{display:block;color:var(--mut);font-size:11px}
+.choices{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.choice{background:#fff;border:1px solid var(--line);text-align:left}
+.choice.sel{border-color:var(--o);background:var(--o2)}
+.choice small{display:block;color:var(--mut);font-weight:400}
+.warn{background:var(--o2);color:#7a3505;padding:12px;border-radius:10px;font-size:12px;margin:12px 0}
+.foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:12px;font-weight:700}
+.loginpage{min-height:100vh;display:grid;grid-template-columns:1.1fr .9fr}
+.hero{padding:8vw;background:linear-gradient(145deg,#151515,#24201d 60%,#542506);color:#fff;display:flex;flex-direction:column;justify-content:center}
+.hero h1{font-size:clamp(34px,5vw,58px);line-height:1.05;margin:22px 0 16px}
+.hero p{color:#f5e8de;max-width:460px;line-height:1.7}
+.loginbox{display:grid;place-items:center;padding:32px}
+.loginform{width:min(380px,100%)}
+.loginform .primary{width:100%;padding:12px}
+.err{color:#c03636;font-size:12px;min-height:18px;margin-bottom:8px}
+.foot2{font-size:11px;color:#98a2b3;margin-top:14px}
+.toast{position:fixed;right:20px;bottom:20px;z-index:40;background:#182230;color:#fff;padding:12px 16px;border-radius:11px;max-width:340px}
+@media(max-width:800px){
+ .layout{grid-template-columns:1fr}
+ aside{border-right:0;border-bottom:1px solid var(--line);display:flex;gap:4px;overflow:auto;padding:8px}
+ .nav{width:auto;white-space:nowrap;margin:0}
+ .loginpage{grid-template-columns:1fr}
+ .hero{padding:36px 24px}
+ .card{grid-template-columns:70px 1fr}
+ .acts{grid-column:2}
+ .grid3{grid-template-columns:repeat(2,1fr)}
+ .choices{grid-template-columns:1fr}
+ .user .ut{display:none}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" class="toast hidden"></div>
+<script>
+(()=>{
+/* ---------- DATA ---------- */
+const BASE='2026-10-19'; // Monday of the demo week
+const ROOMS=['AB101','AB102','AB103','AB104','AB105'];
+const SLOTS=[['09:00','10:00'],['10:00','11:00'],['11:00','12:00'],['12:00','13:00'],['14:00','15:00'],['15:00','16:00']].map(([start,end])=>({start,end}));
+const SECTIONS=['CSE-A','CSE-B','CSE-C','CSE-DSA','ECE-B','ECE-IoT'];
+const SUBJECTS=['Data Structures','Engineering Physics','Mathematics','Programming in C++','Digital Logic','Database Systems','Computer Networks','Discrete Mathematics','Operating Systems','Web Development','Electronics','Communication Skills'];
+const TEACHERS=[['T001','Dr. Amit Sharma'],['T002','Prof. Neha Rao'],['T003','Dr. K. Mehta'],['T004','Prof. P. Singh'],['T005','Dr. R. Iyer'],['T006','Prof. S. Khan'],['T007','Dr. M. Joshi'],['T008','Prof. A. Das'],['T009','Dr. V. Patel'],['T010','Prof. N. Gupta'],['T011','Dr. T. Rao'],['T012','Prof. J. Shah']];
+const USERS={};
+TEACHERS.forEach(([id,name])=>USERS[id]={password:'teacher123',role:'teacher',name});
+SECTIONS.forEach((s,i)=>USERS['S00'+(i+1)]={password:'student123',role:'student',name:'Student '+s,section:s});
+
+/* ---------- HELPERS ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays=(s,n)=>{const x=new Date(s+'T12:00:00');x.setDate(x.getDate()+n);return iso(x)};
+const fmt=s=>new Date(s+'T12:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const dayName=s=>new Date(s+'T12:00:00').toLocaleDateString('en-IN',{weekday:'long'});
+const weekStartFor=s=>{const x=new Date(s+'T12:00:00');x.setDate(x.getDate()-((x.getDay()+6)%7));return iso(x)};
+const weekDates=s=>Array.from({length:6},(_,i)=>addDays(s,i));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const active=c=>c.status!=='Cancelled';
+const overlaps=(a,b)=>a.start<b.end&&b.start<a.end;
+const slotLabel=c=>`${c.start}–${c.end}`;
+const uid=()=>'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+function seed(){
+  const rows=[];let n=1;
+  for(let d=0;d<6;d++)for(let s=0;s<SLOTS.length;s++){
+    const count=(s===1||s===4)?5:4;
+    for(let r=0;r<count;r++){
+      const ti=(r+s*4+d*3)%TEACHERS.length,si=(r+s*5+d*2)%SECTIONS.length;
+      rows.push({id:'C'+n++,subject:SUBJECTS[(ti+s+d)%SUBJECTS.length],teacherId:TEACHERS[ti][0],teacher:TEACHERS[ti][1],section:SECTIONS[si],date:addDays(BASE,d),start:SLOTS[s].start,end:SLOTS[s].end,room:ROOMS[(r+d+s)%ROOMS.length],status:'Scheduled',history:[]});
+    }
+  }
+  return rows;
+}
+
+/* ---------- STATE ---------- */
+const S={user:null,tab:'dash',classes:[],notes:[],log:[],matrixDate:BASE,weekStart:weekStartFor(BASE),search:'',day:'all',modal:null};
+const KEY='campusslot-clean-v1';
+function load(){
+  try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&Array.isArray(d.classes)){S.classes=d.classes;S.notes=d.notes||[];S.log=d.log||[];return}}catch{}
+  S.classes=seed();save();
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({classes:S.classes,notes:S.notes,log:S.log}))}catch{}}
+const byId=id=>S.classes.find(c=>c.id===id);
+let toastTimer;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),3000)}
+
+/* ---------- SCHEDULING LOGIC ---------- */
+// All valid (slot, room) combos on a date where the room, the teacher AND the section are free.
+function options(c,date){
+  const out=[];
+  for(const sl of SLOTS){
+    const busy=f=>S.classes.some(x=>x.id!==c.id&&active(x)&&x.date===date&&overlaps(sl,x)&&f(x));
+    if(busy(x=>x.teacherId===c.teacherId)||busy(x=>x.section===c.section))continue;
+    for(const room of ROOMS)if(!busy(x=>x.room===room))out.push({date,start:sl.start,end:sl.end,room});
+  }
+  return out;
+}
+function addNote(type,title,message,section,teacherId){
+  S.notes.push({id:uid(),type,title,message,section,teacherId,createdAt:Date.now(),readBy:[]});
+}
+const notesFor=()=>S.notes.filter(n=>S.user.role==='teacher'?n.teacherId===S.user.id:n.section===S.user.section);
+const unread=()=>notesFor().filter(n=>!n.readBy.includes(S.user.id)).length;
+
+function doCancel(m){
+  const c=byId(m.id);if(!c||c.status==='Cancelled')return;
+  c.history.push({action:'Cancelled',oldDate:c.date,oldStart:c.start,oldRoom:c.room,at:Date.now()});
+  c.status='Cancelled';
+  addNote('Cancelled','Class cancelled: '+c.subject,`${c.subject} for ${c.section} on ${fmt(c.date)} at ${slotLabel(c)} in ${c.room} has been cancelled by ${c.teacher}.`,c.section,c.teacherId);
+  S.log.push({createdAt:Date.now(),title:'Class cancelled · '+c.subject,message:`${c.section} · ${fmt(c.date)} · ${slotLabel(c)} · ${c.room}. Room slot released.`});
+  save();S.modal=null;toast('Class cancelled. Room freed and students notified.');
+}
+function doResched(m){
+  const c=byId(m.id),o=m.sel;if(!c||!o)return;
+  if(!options(c,o.date).some(x=>x.start===o.start&&x.room===o.room)){toast('Conflict detected. Choose another slot.');m.stage='choose';m.sel=null;return}
+  const old={date:c.date,start:c.start,end:c.end,room:c.room};
+  c.history.push({action:'Rescheduled',oldDate:old.date,oldStart:old.start,oldRoom:old.room,at:Date.now()});
+  Object.assign(c,{date:o.date,start:o.start,end:o.end,room:o.room,status:'Rescheduled'});
+  addNote('Rescheduled','Class rescheduled: '+c.subject,`${c.subject} for ${c.section} moved from ${fmt(old.date)} ${old.start}–${old.end} in ${old.room} to ${fmt(c.date)} ${slotLabel(c)} in ${c.room}.`,c.section,c.teacherId);
+  S.log.push({createdAt:Date.now(),title:'Class rescheduled · '+c.subject,message:`${c.section}: ${fmt(old.date)} ${old.start}–${old.end} ${old.room} → ${fmt(c.date)} ${slotLabel(c)} ${c.room}.`});
+  save();S.matrixDate=c.date;S.weekStart=weekStartFor(c.date);S.modal=null;toast('Class rescheduled. Students notified.');
+}
+function doExtra(m){
+  const section=document.getElementById('xSec').value,subject=document.getElementById('xSub').value;
+  if(!section||!subject){toast('Choose both a batch and a subject.');return}
+  const slot={start:m.start,end:m.end};
+  const busy=f=>S.classes.some(x=>active(x)&&x.date===m.date&&overlaps(slot,x)&&f(x));
+  if(busy(x=>x.room===m.room)){toast('That room is no longer free.');return}
+  if(busy(x=>x.teacherId===S.user.id)){toast('You already have a class at this time.');return}
+  if(busy(x=>x.section===section)){toast('That batch already has a class at this time.');return}
+  S.classes.push({id:'X'+Date.now().toString(36).toUpperCase(),subject,teacherId:S.user.id,teacher:S.user.name,section,date:m.date,start:m.start,end:m.end,room:m.room,status:'Scheduled',isExtra:true,history:[]});
+  addNote('Rescheduled','Extra class scheduled: '+subject,`${subject} extra class for ${section} on ${fmt(m.date)} at ${m.start}–${m.end} in ${m.room} with ${S.user.name}.`,section,S.user.id);
+  S.log.push({createdAt:Date.now(),title:'Extra class scheduled · '+subject,message:`${section} · ${fmt(m.date)} · ${m.start}–${m.end} · ${m.room}. Added by ${S.user.name}.`});
+  save();S.modal=null;toast('Extra class scheduled and batch notified.');
+}
+
+/* ---------- VIEWS: LOGIN ---------- */
+function loginView(){return `
+<div class="loginpage">
+ <section class="hero">
+  <div class="brand"><div class="logo">C</div>CampusSlot</div>
+  <h1>Every room.<br>Every slot.<br><span style="color:#ff8a24">In sync.</span></h1>
+  <p>Find available rooms, prevent timetable collisions, and keep every section informed.</p>
+ </section>
+ <section class="loginbox">
+  <form class="loginform" id="loginForm">
+   <h2>Sign in to your campus</h2>
+   <p class="sub">Enter your campus account details to continue.</p>
+   <div class="field"><label for="lid">Login ID</label><input id="lid" autocomplete="username" placeholder="T001–T012 or S001–S006" required></div>
+   <div class="field"><label for="lpw">Password</label><input id="lpw" type="password" autocomplete="current-password" required></div>
+   <div class="field"><label for="lrole">Login as</label><select id="lrole"><option value="teacher">Teacher</option><option value="student">Student</option></select></div>
+   <div class="err" id="lerr"></div>
+   <button class="primary" type="submit">Sign in →</button>
+   <div class="foot2">Demo prototype · data is saved in this browser only.</div>
+  </form>
+ </section>
+</div>`}
+function login(){
+  const id=document.getElementById('lid').value.trim().toUpperCase();
+  const pw=document.getElementById('lpw').value;
+  const role=document.getElementById('lrole').value;
+  const u=USERS[id];
+  if(!u||u.password!==pw||u.role!==role){document.getElementById('lerr').textContent='Unable to sign in. Check your ID, password and account type.';return}
+  S.user={id,...u};S.tab='dash';S.weekStart=weekStartFor(BASE);render();
+}
+
+/* ---------- VIEWS: SHARED SHELL ---------- */
+function appView(){
+  const u=S.user,t=u.role==='teacher';
+  const nav=(id,label)=>`<button class="nav ${S.tab===id?'active':''}" data-act="tab" data-tab="${id}">${label}${id==='notes'&&unread()?` (${unread()})`:''}</button>`;
+  return `
+<header class="topbar">
+ <div class="brand"><div class="logo">C</div>CampusSlot</div>
+ <div class="user"><div class="ut"><strong>${esc(u.name)}</strong><small>${t?'Teacher':'Student · '+u.section} · ${u.id}</small></div><button class="outline small" data-act="logout">Log out</button></div>
+</header>
+<div class="layout">
+ <aside>${nav('dash','Dashboard')}${t?nav('matrix','Room Availability'):''}${nav('notes','Notifications')}${nav('log','Activity History')}</aside>
+ <main>${S.tab==='dash'?dashView():S.tab==='matrix'&&t?matrixView():S.tab==='notes'?notesView():logView()}</main>
+</div>${S.modal?modalView():''}`}
+
+/* ---------- VIEWS: DASHBOARD (teacher + student) ---------- */
+function visible(){
+  const dates=weekDates(S.weekStart),u=S.user;
+  let l=S.classes.filter(c=>dates.includes(c.date)&&(u.role==='teacher'?c.teacherId===u.id:c.section===u.section));
+  if(S.day!=='all')l=l.filter(c=>dayName(c.date)===S.day);
+  if(S.search){const q=S.search.toLowerCase();l=l.filter(c=>[c.subject,c.room,c.section,c.teacher,c.status,c.date].some(x=>String(x).toLowerCase().includes(q)))}
+  return l.sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+}
+function card(c){
+  const canAct=S.user.role==='teacher'&&c.status!=='Cancelled'&&c.date>=BASE;
+  return `<article class="card">
+   <div class="time">${c.start}<span>to ${c.end}</span></div>
+   <div><b>${esc(c.subject)}</b> <span class="pill ${c.status}">${c.status}${c.isExtra?' · Extra':''}</span>
+    <div class="meta">▣ ${esc(c.room)} · ♙ ${esc(c.section)} · ♧ ${esc(c.teacher)}</div></div>
+   <div class="acts">${canAct?`<button class="dark small" data-act="cancel" data-id="${c.id}">Cancel</button><button class="primary small" data-act="resched" data-id="${c.id}">Reschedule</button>`:''}</div>
+  </article>`;
+}
+function listHTML(){
+  const cl=visible();
+  const out=weekDates(S.weekStart).map(d=>{const r=cl.filter(c=>c.date===d);return r.length?`<div class="day">${dayName(d)} · ${fmt(d)}</div>${r.map(card).join('')}`:''}).join('');
+  return out||'<div class="empty">No classes match this week or filter.</div>';
+}
+function dashView(){
+  const u=S.user,cl=visible(),dates=weekDates(S.weekStart);
+  const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return `<h1>${u.role==='teacher'?'Teacher':'Student'} dashboard</h1><p class="sub">Welcome, ${esc(u.name)}</p>
+  <div class="stats">
+   <div class="stat"><b>${cl.length}</b><span>Classes this week</span></div>
+   <div class="stat"><b>${cl.filter(active).length}</b><span>Active classes</span></div>
+   <div class="stat"><b>${unread()}</b><span>Unread notifications</span></div>
+  </div>
+  <section class="panel">
+   <div class="bar"><div><b>Weekly timetable</b><div class="meta">${fmt(dates[0])} — ${fmt(dates[5])}</div></div>
+    <div class="acts"><button class="outline" data-act="wk" data-n="-7">←</button><button class="outline" data-act="wk" data-n="0">This week</button><button class="outline" data-act="wk" data-n="7">→</button></div></div>
+   <div class="bar"><input id="search" placeholder="Search subject, room…" value="${esc(S.search)}">
+    <select id="dayFilter"><option value="all">All days</option>${days.map(d=>`<option ${S.day===d?'selected':''}>${d}</option>`).join('')}</select></div>
+   <div id="list">${listHTML()}</div>
+  </section>`;
+}
+
+/* ---------- VIEWS: TEACHER ONLY — ROOM MATRIX ---------- */
+function matrixView(){
+  const date=S.matrixDate;
+  const rows=ROOMS.map(room=>`<tr><th>${room}</th>${SLOTS.map(s=>{
+    const c=S.classes.find(x=>active(x)&&x.date===date&&x.room===room&&overlaps(s,x));
+    return c
+      ?`<td><button class="cell busy" data-act="detail" data-id="${c.id}">${esc(c.section)}<br>${esc(c.subject)}</button></td>`
+      :`<td><button class="cell free" data-act="extra" data-room="${room}" data-start="${s.start}" data-end="${s.end}">FREE<br>＋ EXTRA CLASS</button></td>`;
+  }).join('')}</tr>`).join('');
+  return `<h1>Room availability</h1><p class="sub">Every room against every slot. Click a free cell to schedule an extra class.</p>
+  <section class="panel">
+   <div class="bar"><div class="legend">Dark = occupied · Light = free</div>
+    <div class="acts"><button class="outline" data-act="mday" data-n="-1">←</button><input type="date" id="mDate" value="${date}"><button class="outline" data-act="mday" data-n="1">→</button></div></div>
+   <div class="wrap"><table><thead><tr><th>Room</th>${SLOTS.map(s=>`<th>${s.start}<br>${s.end}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+  </section>`;
+}
+
+/* ---------- VIEWS: NOTIFICATIONS + ACTIVITY ---------- */
+function notesView(){
+  const n=notesFor().sort((a,b)=>b.createdAt-a.createdAt);
+  return `<div class="bar"><div><h1>Notifications</h1><p class="sub">Cancellations and rescheduling updates for your account.</p></div><button class="outline" data-act="readAll">Mark all as read</button></div>
+  ${n.length?n.map(x=>{const un=!x.readBy.includes(S.user.id);return `<div class="note ${un?'unread':''}"><div style="flex:1"><strong>${esc(x.title)}</strong><p>${esc(x.message)}</p><small>${new Date(x.createdAt).toLocaleString()}</small></div>${un?`<button class="outline small" data-act="read" data-id="${x.id}">Mark read</button>`:''}</div>`}).join(''):'<div class="empty">No notifications yet.</div>'}`;
+}
+function logView(){
+  const items=S.log.slice().sort((a,b)=>b.createdAt-a.createdAt);
+  return `<h1>Activity history</h1><p class="sub">Record of confirmed cancellations and rescheduling.</p>
+  <section class="panel"><div class="log">${items.length?items.map(a=>`<div><strong>${esc(a.title)}</strong><p>${esc(a.message)}</p><small>${new Date(a.createdAt).toLocaleString()}</small></div>`).join(''):'<div class="empty">No activity yet.</div>'}</div></section>`;
+}
+
+/* ---------- VIEWS: MODALS (teacher actions) ---------- */
+function modalView(){
+  const m=S.modal,c=m.id?byId(m.id):null;
+  let body='';
+  if(m.type==='extra'){
+    body=`<h2>Schedule an extra class</h2><p class="sub">Choose the batch and subject for this free slot.</p>
+    <div class="grid3"><div><span>Date</span><strong>${fmt(m.date)}</strong></div><div><span>Time</span><strong>${m.start}–${m.end}</strong></div><div><span>Room</span><strong>${esc(m.room)}</strong></div></div>
+    <div class="field"><label for="xSec">Batch / section</label><select id="xSec"><option value="">Select batch</option>${SECTIONS.map(x=>`<option>${x}</option>`).join('')}</select></div>
+    <div class="field"><label for="xSub">Subject</label><select id="xSub"><option value="">Select subject</option>${SUBJECTS.map(x=>`<option>${x}</option>`).join('')}</select></div>
+    <div class="warn">Saved only if you and the selected batch are both free at this time.</div>
+    <div class="foot"><button class="outline" data-act="close">Cancel</button><button class="primary" data-act="confirmExtra">Schedule extra class</button></div>`;
+  }else if(!c){return ''}
+  else if(m.type==='detail'){
+    body=`<h2>${esc(c.subject)}</h2><div class="grid3"><div><span>Date</span><strong>${fmt(c.date)}</strong></div><div><span>Time</span><strong>${slotLabel(c)}</strong></div><div><span>Room</span><strong>${esc(c.room)}</strong></div><div><span>Section</span><strong>${esc(c.section)}</strong></div><div><span>Teacher</span><strong>${esc(c.teacher)}</strong></div></div>
+    <div class="foot"><button class="primary" data-act="close">Close</button></div>`;
+  }else if(m.type==='cancel'){
+    body=`<h2>Cancel this class?</h2><div class="grid3"><div><span>Subject</span><strong>${esc(c.subject)}</strong></div><div><span>Section</span><strong>${esc(c.section)}</strong></div><div><span>Room</span><strong>${esc(c.room)}</strong></div><div><span>Date</span><strong>${fmt(c.date)}</strong></div><div><span>Time</span><strong>${slotLabel(c)}</strong></div></div>
+    <div class="warn">This frees the room and slot and notifies students in ${esc(c.section)}.</div>
+    <div class="foot"><button class="outline" data-act="close">Go Back</button><button class="dark" data-act="confirmCancel">Confirm Cancellation</button></div>`;
+  }else if(m.type==='resched'){
+    const opts=m.date?options(c,m.date):[];
+    const head=`<h2>Reschedule class</h2><p class="sub">Only combinations where the room, teacher and section are all free are shown.</p>
+    <div class="grid3"><div><span>Subject</span><strong>${esc(c.subject)}</strong></div><div><span>Section</span><strong>${esc(c.section)}</strong></div><div><span>Current</span><strong>${fmt(c.date)}<br>${slotLabel(c)} · ${esc(c.room)}</strong></div></div>`;
+    if(m.stage==='confirm'){
+      body=head+`<div class="grid3"><div><span>From</span><strong>${fmt(c.date)}<br>${slotLabel(c)} · ${esc(c.room)}</strong></div><div><span>To</span><strong>${fmt(m.sel.date)}<br>${m.sel.start}–${m.sel.end} · ${esc(m.sel.room)}</strong></div></div>
+      <div class="warn">The original slot becomes free and ${esc(c.section)} will be notified.</div>
+      <div class="foot"><button class="outline" data-act="back">Go Back</button><button class="primary" data-act="confirmResched">Confirm Reschedule</button></div>`;
+    }else{
+      body=head+`<div class="field"><label for="rDate">New date</label><input type="date" id="rDate" min="${BASE}" value="${m.date}"></div>
+      <b>Available slots (${opts.length})</b>
+      ${opts.length?`<div class="choices">${opts.map(o=>`<button class="choice ${m.sel&&m.sel.start===o.start&&m.sel.room===o.room?'sel':''}" data-act="pick" data-v="${o.start}|${o.end}|${o.room}"><strong>${o.start}–${o.end}</strong><small>Room ${o.room}</small></button>`).join('')}</div>`:'<div class="warn">No valid slots on this date. Pick another date.</div>'}
+      <div class="foot"><button class="outline" data-act="close">Cancel</button><button class="primary" data-act="review" ${m.sel?'':'disabled'}>Review Change →</button></div>`;
+    }
+  }
+  return `<div class="back"><section class="modal" role="dialog" aria-modal="true">${body}</section></div>`;
+}
+
+/* ---------- EVENTS ---------- */
+const root=document.getElementById('root');
+function render(){root.innerHTML=S.user?appView():loginView()}
+
+function act(a,d){
+  const m=S.modal;
+  switch(a){
+    case 'logout':S.user=null;S.modal=null;break;
+    case 'tab':S.tab=d.tab;S.modal=null;break;
+    case 'wk':S.weekStart=d.n==='0'?weekStartFor(BASE):addDays(S.weekStart,+d.n);break;
+    case 'mday':S.matrixDate=addDays(S.matrixDate,+d.n);break;
+    case 'cancel':S.modal={type:'cancel',id:d.id};break;
+    case 'detail':S.modal={type:'detail',id:d.id};break;
+    case 'extra':S.modal={type:'extra',room:d.room,start:d.start,end:d.end,date:S.matrixDate};break;
+    case 'resched':{const c=byId(d.id),date=addDays(c.date,1);S.modal={type:'resched',id:c.id,date,sel:options(c,date)[0]||null,stage:'choose'};break}
+    case 'close':S.modal=null;break;
+    case 'pick':{const [start,end,room]=d.v.split('|');m.sel={date:m.date,start,end,room};break}
+    case 'review':if(m.sel)m.stage='confirm';break;
+    case 'back':m.stage='choose';break;
+    case 'confirmCancel':doCancel(m);break;
+    case 'confirmResched':doResched(m);break;
+    case 'confirmExtra':doExtra(m);break;
+    case 'read':{const n=S.notes.find(x=>x.id===d.id);if(n&&!n.readBy.includes(S.user.id)){n.readBy.push(S.user.id);save()}break}
+    case 'readAll':notesFor().forEach(n=>{if(!n.readBy.includes(S.user.id))n.readBy.push(S.user.id)});save();break;
+  }
+  render();
+}
+root.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b&&!b.disabled)act(b.dataset.act,b.dataset)});
+root.addEventListener('submit',e=>{if(e.target.id==='loginForm'){e.preventDefault();login()}});
+root.addEventListener('input',e=>{if(e.target.id==='search'){S.search=e.target.value;document.getElementById('list').innerHTML=listHTML()}});
+root.addEventListener('change',e=>{
+  const id=e.target.id;
+  if(id==='dayFilter'){S.day=e.target.value;render()}
+  else if(id==='mDate'){S.matrixDate=e.target.value||BASE;render()}
+  else if(id==='rDate'){const m=S.modal,c=byId(m.id);m.date=e.target.value||m.date;m.sel=options(c,m.date)[0]||null;render()}
+});
+
+load();render();
+})();
+</script>
+</body>
+</html>
